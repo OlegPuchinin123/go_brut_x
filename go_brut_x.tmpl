@@ -1,0 +1,66 @@
+
+/*
+ (c) Oleg Puchinin 2021
+ puchininolegigorevich@gmail.com
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <math.h>
+#include <stdbool.h>
+
+double _log(double a, double b)
+{
+	return log(b) / log(a);
+}
+
+double _cos(double a)
+{
+	return cos(a * (M_PI / 180));
+}
+
+double _sin(double a)
+{
+	return sin(a * (M_PI / 180));
+}
+
+double _tan(double a)
+{
+	return tan(a * (M_PI / 180));
+}
+
+int main(int argc, char ** argv)
+{
+	register double x;
+	double res;
+	double last_x;
+	bool sign, sign_c;	
+	bool no_root = true;
+
+	x = @diap_low;
+	res = @f;
+	sign = res < 0;
+	sign_c = sign;
+	last_x = x;
+
+	while (x <= @diap_high) {
+		res = @f;
+		sign_c = res < 0;
+		if (sign == !sign_c) {
+			sign = sign_c;
+			printf("Root: %f\n", last_x);
+			no_root = false;
+		}
+		last_x = x;
+		x += @step;
+	}
+	if (no_root) {
+		printf("No root.\n");
+	}
+
+	return EXIT_SUCCESS;
+}
