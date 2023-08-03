@@ -1,5 +1,5 @@
 /*
- * (c) Oleg Puchinin 2021
+ * (c) Oleg Puchinin
  * puchininolegigorevich@gmail.com
  */
 
@@ -7,7 +7,7 @@ package main
 
 import (
 	"bufio"
-	"errors"
+	_ "embed"
 	"flag"
 	"fmt"
 	"os"
@@ -15,12 +15,16 @@ import (
 	"strings"
 )
 
+//go:embed go_brut_x.tmpl
+var templ string
+
 type Brut struct {
 	f         string
 	templ     string
 	main_code string
-	diap      *string
-	step      *float64
+	diap_high string
+	diap_low  string
+	step      string
 }
 
 func (brut *Brut) compile() error {
@@ -35,13 +39,14 @@ func (brut *Brut) compile() error {
 	}
 	f.WriteString(brut.main_code)
 	f.Close()
+	defer os.Remove("/tmp/go_brut_x.c")
+
 	os.Chdir("/tmp")
-	cmd = exec.Command("gcc", "go_brut_x.c", "-lm", "-O3")
-	cmd.Run()
-	os.Remove("/tmp/go_brut_x.c")
-	if cmd.ProcessState.ExitCode() != 0 {
-		fmt.Fprintf(os.Stderr, "Can't compile the equation.\n")
-		return errors.New("Can't compile.")
+	cmd = exec.Command("gcc", "go_brut_x.c", "-lm")
+	e = cmd.Run()
+	if e != nil {
+		os.Stderr.WriteString("Can't compile.\n")
+		return e
 	}
 	cmd = exec.Command("./a.out")
 	cmd.Stdout = os.Stdout
@@ -51,19 +56,11 @@ func (brut *Brut) compile() error {
 }
 
 func (brut *Brut) process_template(f string) {
-	var (
-		diap_spl []string
-	)
 	brut.main_code = brut.templ
 	brut.main_code = strings.ReplaceAll(brut.main_code, "@f", brut.f)
-	brut.main_code = strings.ReplaceAll(brut.main_code, "@step", fmt.Sprintf("%f", *brut.step))
-
-	diap_spl = strings.Split(*brut.diap, "..")
-	if len(diap_spl) == 2 {
-		brut.main_code = strings.ReplaceAll(brut.main_code, "@diap_low", diap_spl[0])
-		brut.main_code = strings.ReplaceAll(brut.main_code, "@diap_high", diap_spl[1])
-	}
-	//println(brut.main_code)
+	brut.main_code = strings.ReplaceAll(brut.main_code, "@step", brut.step)
+	brut.main_code = strings.ReplaceAll(brut.main_code, "@diap_low", brut.diap_low)
+	brut.main_code = strings.ReplaceAll(brut.main_code, "@diap_high", brut.diap_high)
 }
 
 func (brut *Brut) main_loop() {
@@ -72,8 +69,9 @@ func (brut *Brut) main_loop() {
 		buf *bufio.Reader
 		s   string
 	)
-	buf = bufio.NewReader(os.Stdout)
+	buf = bufio.NewReader(os.Stdin)
 	for {
+		fmt.Printf("Enter equation (eq zero): ")
 		s, e = buf.ReadString('\n')
 		if e != nil {
 			return
@@ -88,21 +86,21 @@ func (brut *Brut) main_loop() {
 func main() {
 	var (
 		brut *Brut
-		buf  []byte
-		e    error
-		s    string
+		low  *string
+		high *string
+		step *string
 	)
 
-	brut = new(Brut)
-	brut.diap = flag.String("diap", "-1000..1000", "")
-	brut.step = flag.Float64("step", 0.001, "")
+	step = flag.String("step", "0.001", "step. stupid step")
+	low = flag.String("diap_low", "-1000", "low")
+	high = flag.String("diap_high", "1000", "high")
 	flag.Parse()
-	buf, e = os.ReadFile("./go_brut_x.tmpl")
-	if e != nil {
-		fmt.Printf("Can't read file ./go_brut_x.tmpl")
-		return
-	}
-	s = string(buf)
-	brut.templ = s
+
+	brut = &Brut{}
+	brut.diap_low = *low
+	brut.diap_high = *high
+	brut.step = *step
+
+	brut.templ = templ
 	brut.main_loop()
 }

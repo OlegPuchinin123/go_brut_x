@@ -13,11 +13,6 @@
 #include <math.h>
 #include <stdbool.h>
 
-double _log(double a, double b)
-{
-	return log(b) / log(a);
-}
-
 double _cos(double a)
 {
 	return cos(a * (M_PI / 180));
@@ -36,9 +31,9 @@ double _tan(double a)
 int main(int argc, char ** argv)
 {
 	register double x;
-	double res;
-	double last_x;
-	bool sign, sign_c;	
+	register double res;
+	register double last_x;
+	register bool sign, sign_c;
 	bool no_root = true;
 
 	x = @diap_low;
