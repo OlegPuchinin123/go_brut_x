@@ -1,4 +1,4 @@
-module go_brut_x
+module  github.com/OlegPuchinin123/go_brut_x
 
 go 1.20
 
